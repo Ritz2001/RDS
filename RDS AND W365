@@ -1,0 +1,206 @@
+Remote Desktop Licensing (RD Licensing)
+
+
+Formerly Terminal Services Licensing (TS Licensing), manages the Remote Desktop Services client access licenses (RDS CALs) that are required for each device or user to connect to a Remote Desktop Session Host (RD Session Host) server.
+You use RD Licensing to install, issue, and track the availability of RDS CALs on a Remote Desktop license server.
+When a client — either a user or a device — connects to an RD Session Host server, the RD Session Host server determines if an RDS CAL is needed. The RD Session Host server then requests an RDS CAL from a Remote Desktop license server on behalf of the client attempting to connect to the RD Session Host server. If an appropriate RDS CAL is available from a license server, the RDS CAL is issued to the client, and the client is able to connect to the RD Session Host server.
+Although there is a licensing grace period during which no license server is required, after the grace period ends, clients must have a valid RDS CAL issued by a license server before they can log on to an RD Session Host server.
+Important: Remote Desktop supports two concurrent connections to remotely administer a computer. You do not need a license server for these connections.
+To use Remote Desktop Services, you must also have at least one license server deployed in your environment.
+•	For small deployments, you can install both the RD Session Host role service and the RD Licensing role service on the same computer
+•	For larger deployments, it is recommended that the RD Licensing role service be installed on a separate computer from the RD Session Host role service
+You must configure RD Licensing correctly in order for your RD Session Host server to accept connections from clients.
+Grace Period
+To allow ample time for you to deploy a license server, Remote Desktop Services provides a licensing grace period for the RD Session Host server during which no license server is required. During this grace period, an RD Session Host server can accept connections from unlicensed clients without contacting a license server.
+•	The grace period begins the first time the RD Session Host server accepts a client connection
+•	The grace period ends after whichever of the following occurs first:
+o	A permanent RDS CAL is issued by a license server to a client connecting to the RD Session Host server
+o	The number of days in the grace period is exceeded
+The length of the grace period is based on the operating system running on the RD Session Host server. The grace periods are as follows:
+Operating system running on the RD Session Host server	Grace period
+Windows Server 2003 or newer	120 days
+Windows 2000	90 days
+
+
+
+ W365
+Windows 365 uses both default and custom OS images to automatically create virtual Cloud PCs that you provide to your end users. The default images are available from the gallery in Microsoft Intune as a part of creating your provisioning policy. You can also upload custom images(opens in a new tab) that you create.
+ 
+ 
+o	Both marketplace and custom images must meet the following requirements:
+o	Supported versions of Windows 10 or Windows 11 Enterprise
+o	Generation 2 images
+o	Images must never have been AD and Microsoft Entra ID joined and Intune-enrolled or enrolled for co-management (For more information, refer to Sysprep won't run correctly on a device that has been MDM enrolled(opens in a new tab).)
+o	Generalized VM image
+o	Single session VM images (multi-session isn’t supported)
+o	No recovery partition (For information about how to remove a recovery partition, refer to Windows Server command: delete partition(opens in a new tab).)
+o	Default 64 GB OS disk size (The OS disk size is automatically adjusted to the size specified in SKU description of the Windows 365 license.)
+ 
+Gallery Images 
+ 
+Windows 365 provides a built-in gallery of Windows Enterprise images accessible through the provisioning policy creation flow. Each image helps admins with preset audit policies already enabled, like account policies, logon or logoff, object access, and policy change.
+There are two sets of images available to choose from across the different versions of Windows Enterprise:
+•	Images with pre-installed Microsoft 365 Apps
+•	Images with no preinstalled applications
+ 
+Custom Image
+ 
+If none of the default gallery images meet your requirements, you can upload up to 20 of your own custom device images. For more information on creating a custom image, refer to Create a managed image of a generalized VM in Azure(opens in a new tab).
+A custom image can be created using any of the images mentioned previously as a starting point(opens in a new tab).
+ 
+ 
+During Cloud PC provisioning, the state indicates the current status of the Cloud PC in the setup process. Here are the main states you might encounter:
+•	Cloud PC provisioning states
+•	Equivalent states
+•	Transient states
+
+Windows 365 deployment overview 
+After an organization has purchased one or more Windows 365 licenses, the Windows 365 node in Microsoft Intune will become active for management. At this point, you can provision Cloud PCs.
+To set up a system to provision on-demand Cloud PCs to users, follow these steps:
+1.	Assign licenses to users(opens in a new tab).
+2.	Create Azure network connection(opens in a new tab) (optional).
+3.	Provide localized Windows experience(opens in a new tab) (optional).
+4.	Add device images(opens in a new tab) (optional).
+5.	Create a provisioning policy(opens in a new tab).
+
+ 
+ 
+ 
+Cloud PC Provisioning states 
+ 
+The provisioning states for Cloud PCs in Windows 365 include:
+•	None: No record in the database or it's deleted
+•	Licensed: User is licensed but no policy is assigned
+•	Provisioned: Device is provisioned and available for use
+•	InGracePeriod Reprovision: Device will be reprovisioned after the grace period expires
+•	InGracePeriod Deprovision: Device will be deprovisioned after the grace period expires
+•	InGracePeriod Delete: Device will be deleted after the grace period expires
+•	Pending: Workspace will move to the Provisioning state when quota is available
+ 
+Equivalent States
+ 
+Equivalent states refer to the different statuses a Cloud PC can have during its lifecycle.
+ 
+•	Deprovisioned: Licensed but the last state was Deprovisioning
+•	Deprovision Failed: Provisioned but the last state was Deprovisioned (not consistent with the license policy configuration)
+•	Upgraded: Provisioned but the last state was Upgrading
+•	Upgrade Failed: Provisioned but the last state was Upgrading (not consistent with the license policy configuration)
+•	Provision Failed: Licensed but the last state was Provisioning (not consistent with the license policy configuration)
+•	Reprovision Failed: Provisioned but the last two states were Reprovision and Provisioning (last action failed but consistent with the license policy configuration)
+•	Restored: Provisioned but the last state was Restoring
+•	Restore Failed: Provisioned but the last state was Restoring (last action failed but consistent with the license policy configuration)
+ 
+Transient states
+ 
+Transient states are temporary statuses that a Cloud PC might go through during provisioning or other operations.
+•	Provisioning: From Licensed to Provisioned
+•	Upgrading: From Provisioned to Provisioned triggered by the upgrade process
+•	Deprovisioning: From InGracePeriod Deprovision to Deprovisioned or from InGracePeriod Delete to None
+•	Restoring: From Provisioned to Provisioned triggered by the restore action
+ 
+ 
+ 
+Grace Period 
+ 
+When a license or assignment change occurs for a user with a current Cloud PC, the Cloud PC object is marked as InGracePeriod. Grace periods help admins avoid licensing or targeting mistakes that might cause users to lose access to their Cloud PC.
+When a Cloud PC enters a grace period, an alert is triggered.
+ 
+In Windows 365 Enterprise and Frontline, the grace period for Cloud PCs is generally seven days. The grace period in Windows 365 Business is only 24 hours. During this period, users can continue to access their Cloud PCs. After the grace period ends, users are logged off, access is lost, and the Cloud PC is deprovisioned.
+Let's check out the grace period for each scenario.
+ 
+Grace period scenario	Length
+Reprovision	Enterprise (7 days), Business (1 day)
+Deprovision	Enterprise (7 days), Business (1 day)
+Delete	Enterprise (7 days), Business (1 day)
+Fraud Block	Enterprise (7 days), Business (3 days if used and 1 day if never used)
+Guard Rail	15 days (in the don't touch list)
+ 
+ 
+ 
+Resize a Cloud PC
+ 
+The Resize remote action allows you to upgrade the Random Access Memory (RAM), Central Processing Unit (CPU), and storage size of a Cloud PC, or downgrade the RAM and CPU, while preserving user and disk data without requiring reprovisioning. This is useful when a user needs higher RAM and CPU for intensive applications, more disk space, or less RAM and CPU for current workloads.
+ 
+ 
+Requirements for Resize
+ 
+Role Requirements 
+ 
+To resize a Cloud PC, the admin must have certain built-in Microsoft Entra roles.
+For direct assigned Cloud PC provisioning
+•	Intune Service Administrator
+•	Intune Reader and Cloud PC Admin roles
+•	Intune Reader and Windows 365 Administrator roles
+For group-based Cloud PC provisioning
+•	Intune Service Administrator
+•	Intune Reader and Windows 365 Administrator roles
+•	Microsoft Entra group read or write membership and licensing permissions.
+ 
+ 
+Ipaddress Requirements 
+ 
+When resizing a Microsoft Entra hybrid join bring-your-own-network Cloud PC, a second IP address must be available in the subnet for the Cloud PC to be resized.
+During the resizing operation, a second IP address is used when moving to the new size. This precaution makes sure that the Cloud PC can be rolled back to the original should an issue occur.
+ 
+ 
+Other Requirements
+ 
+In order to use the Resize option, there must be available licenses in inventory for the resized Cloud PC configuration. To resize a Cloud PC, it must have a status of Provisioned in the Windows 365 provisioning node.
+ 
+ 
+ 
+ 
+Restoring Cloud PC
+ 
+Point-in-time restore lets an administrator restore a Cloud PC to the exact state it was at an earlier point in time. You can create restore points at regular intervals or on-demand restore points for specific times. Admins can also give users permission to restore their own Cloud PCs.
+ 
+ 
+Short-term restore points
+ 
+Set 10 short-term restore points every 4, 6, 12, 16, or 24 hours.
+ 
+Long-term restore points
+ 
+There are four non-configurable restore points that are saved every seven days.
+ 
+On-demand manual restore points
+ 
+Administrators can create a manual restore point, and each Cloud PC can have only one manual restore point at a time.
+
+
+Sign in to the Microsoft Intune admin center
+Sign in to the Microsoft Intune admin center(opens in a new tab), select Devices > Windows 365 (under Provisioning) > Azure network connection > Create.
+Then, depending on the type of ANC you want to create, choose Microsoft Entra Join or Hybrid Microsoft Entra Join.
+
+anc
+ANC checks are performed once every one to six hours and a comprehensive, end-to-end health check can take up to 30 minutes. Health checks are run on temporary Azure VMs (created automatically and deleted when health checks are completed). After a check is complete, the results are posted on the Azure network connection pane of the Microsoft Intune admin center.
+ 
+
+W365 CLOUD PC UNDER REVIEW
+
+Placing a Cloud PC under review refers to the process of taking a snapshot of the Cloud PC for security and investigation purposes. You may have to place a Cloud PC under review for any of these scenarios:
+•	A request from an internal Security Operation Center (SOC) team
+•	A response to a request from an internal or external third-party auditor
+•	As a response to a pending or ongoing legal investigation
+Up to 10 Cloud PCs can be placed under review simultaneously. If more than 10 are placed under review at once, the requests are queued, but the possibility of timeouts increases if they remain too long in the queue. To avoid timeouts, it is recommended to stagger the requests to allow sufficient time for previous requests to complete first.
+
+Requirements
+To place a Cloud PC under review, you need:
+•	A Windows 365 Enterprise license
+•	An Azure Storage account in the same tenant, set up according to the specified requirements
+
+
+To resize a Cloud PC, the admin must have certain built-in Microsoft Entra roles.
+For direct assigned Cloud PC provisioning
+•	Intune Service Administrator
+•	Intune Reader and Cloud PC Admin roles
+•	Intune Reader and Windows 365 Administrator roles
+For group-based Cloud PC provisioning
+•	Intune Service Administrator
+•	Intune Reader and Windows 365 Administrator roles
+•	Microsoft Entra group read or write membership and licensing permissions
+
+The Resize pending license state lasts for 48 hours, and if the original license is removed but the new license isn't assigned within this period, the device goes into a grace period.
+ 
+ 
+
