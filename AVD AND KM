@@ -1,0 +1,727 @@
+AVD Km
+1.What is AVD? Explain the connection flow of AVD with diagram.
+Azure Virtual Desktop is a desktop & application virtualization service which runs on Azure.
+AVD Functions:
+ • Full Windows experience - AVD delivers a full Windows experience with Windows 11 or Windows Server.
+
+ • Single to Multi-Session Compatibility: You can assign a machine to single users by using single session or use multi-session for scalability.
+
+ • RemoteApp: Offer full desktop or use RemoteApp to deliver individual apps.
+
+• Scalability: Scalable and flexible environments could be created.
+
+Here is the connection flow of AVD  in Entra scenario:
+
+1. Session host maintains permanent outbound connection to RD Broker.
+
+ 2. User requests feed using Windows app or web browser.
+
+   A. User authenticates with Azure AD and gets AAD token.
+
+   B. User presents token to RD Web.
+
+   C. RD Web queries RD Broker (with token) for resources.
+
+   D. RD Broker checks resource directory and geographical databases for .rdp files/icons.
+
+    * The geographical database contains the connection files (.rdp) and icons for every resource that the user has        been  provisioned .
+
+   E. RD Broker service returns .rdp files to the web service.
+
+   F. RD Web service returns this information to the user's device.
+
+ 3. User requests/initiates connection using the .rdp file.
+
+   A. Remote session begins with a connection to Azure Front Door which provides (global entry point) to AVD.
+
+   B. Azure Front Door directs the connection to the gateway service with lowest latency.
+
+   C. Gateway service queries the broker service for session host with token{AAD}
+
+4. RD Broker orchestrates the connection between user device and session host.
+
+   A. The Broker service returns the session host to the same gateway service .
+
+5. Depending upon the configuration and available network protocols , the Connection is made using:
+
+   A. Reverse Connect Transport: After both client and session host connected to the gateway service , it starts relaying the RDP traffic using Transmission control protocol between the client and session host .
+
+   B. RDP Short path: A Direct User Datagram protocol (UDP)-based transport is created between the user's device and the session host bypassing the gateway.
+
+ Reverse connect transport is the default connection type .
+
+2.  What is host pool? Explain its types? 4
+
+Host pool
+
+A host pool is a collection of Azure virtual machines that are registered to Azure Virtual Desktop as session hosts. All session host virtual machines in a host pool should be sourced from the same image for a consistent user experience. You control the resources published to users through application groups.
+
+ A host pool can be one of two types:
+
+Personal Host Pool: Where each session host is assigned to an individual user. Personal host pools provide dedicated desktops to end-users that optimize environments for performance and data separation.
+
+ Pooled Host Pool: where user sessions can be load balanced to any session host in the host pool. There can be multiple different users on a single session host at the same time. Pooled host pools provide a shared remote experience to end-users, which ensures lower costs and greater efficiency.
+
+3.  What is application group? Explain its types. 3
+
+An application group is a logical grouping of applications that are available on session hosts in a host pool. 
+
+Application groups control whether a full desktop or which applications from a host pool are available to users to connect to. An application group can only be assigned to a single host pool, but you can assign multiple application groups to the same host pool.
+
+There are two types of Application groups:
+
+ Desktop Application Group: Users access the full Windows desktop from a session host. Available with pooled or personal host pools.
+
+ RemoteApp Application Group: Users access individual applications you select and publish to the application group. Available with pooled host pools only.
+
+4.  What is the default limit for number of supported application group per AAD tenant?1
+
+500
+
+5. What is the command to check the status of the sxs listener? 1
+
+Qwinsta
+
+6.  What are the eligible licenses for AVD? 4
+
+For server : RDS Cals are used for providing the license and a separate licensing server is required to provide the RDS CALs to the machines 
+
+For client ; The AVD client machine  will use the provided license on the machine like E3,E5.
+
+7. What are the AVD agents? 4
+
+AVD Agents
+
+ AVD agent acts as the intermediate communicator between the AVD service and virtual machine.
+
+ Types of AVD Agents
+
+ i) RD Agent Boot Loader: The agent boot loader is the executable that loads the agent.
+  
+Here are few features:
+
+Installs and initializes the RD Agent
+
+Handles updates of the agent
+
+Ensures agent runs correctly during system startup
+
+Acts like a supporting service for the main agent.
+
+ ii) RD Services SXS Network Stack: It is responsible for gateway listeners for incoming connection requests.
+
+Here are few features:
+
+ Traditional Remote Desktop connections required inbound access (port 3389) to the virtual machine, which posed security risks.
+
+To solve this, Azure Virtual Desktop introduced the SxS network stack, where:
+
+The session host initiates an outbound connection to Azure
+
+Communication happens over secure HTTPS (port 443)
+
+No direct inbound RDP access is required
+
+The SxS Network Stack Agent plays a key role in enabling this mechanism.
+
+ iii) RD Services Infrastructure Agents: It is responsible for checking communication between AVD service (gateway/broker) to VM.
+
+ Here are few features:
+
+Maintains connectivity with Azure
+
+Supports reverse connect (SxS stack)
+
+Handles session communication
+
+Works in the background to ensure stable connectivity.
+
+ 
+iv) RD Services Infrastructure Geneva agent: It is responsible for monitoring the health of agents.
+
+ When users connect to Azure Virtual Desktop, many processes happen in the background (authentication, brokering, session creation, etc.).
+
+The Geneva Agent continuously:
+
+Monitors these processes
+
+Collects logs and metrics
+
+Sends data to Azure monitoring systems
+
+This helps in detecting issues, troubleshooting errors, and improving service reliability.
+
+
+8. What are the AVD built-in roles. 2
+
+There are four types of AVD built-in roles :
+1. Owner
+2.Contributor
+3. Reader
+4.Operator
+
+9. What are the types of cloud service model? AVD falls under which service model. 2
+
+The cloud refers to a network of remote servers owned and managed by third-party providers, accessible over the internet.
+
+ It provides on-demand access to computing resources like storage, virtual machines, software applications, and networking.
+
+ Types of Cloud Computing service model :
+
+1. Infrastructure as a Service (IaaS): Users manage their own operating system, software, and data, while the provider manages the infrastructure.
+
+Here are some uses:
+
+ On-demand virtual machines and storage
+
+Scalable resources
+
+Pay-as-you-go pricing
+
+Full control over operating systems and applications
+
+ Examples:
+
+ Virtual servers
+
+Cloud storage
+
+Networking components
+
+ Use Case:
+
+Used by system administrators and IT teams who want flexibility to build and manage their own infrastructure.
+
+ 2. Platform as a Service (PaaS): Users manage their applications while the provider manages the underlying infrastructure and platform tools.
+
+ Development tools and frameworks
+
+Database management systems
+
+Middleware and runtime environments
+
+Automatic updates and maintenance
+
+ Examples:
+
+Application hosting platforms
+
+Web development environments
+
+Use Case:
+
+Ideal for developers who want to focus on coding and application development without managing infrastructure.
+
+ 3. Software as a Service (SaaS): Users access software applications hosted and managed by the provider.
+
+Accessible from anywhere via internet
+
+No installation required
+
+Automatic updates
+
+Subscription-based pricing
+
+ Examples:
+
+Email services
+
+Online collaboration tools
+
+Customer relationship management (CRM) software
+
+ Use Case:
+
+Best for end-users who need ready-to-use applications without technical setup.
+
+
+AVD falls under Software as service model.
+
+10.What is the difference between RDS and AVD? 4
+
+RDS     
+
+Session-based on virtualization-based deployment           
+
+Session collection     
+
+Published RemoteApps         
+
+Published desktop
+
+Session host role can be installed only on servers               
+
+ AVD
+
+Tenant-based deployment
+
+Host-pool
+
+ Desktop application group
+
+Remote application group
+
+Session host can be installed in clients (single session, multi-session), servers.
+
+ 
+11.What are the Microsoft managed components in AVD? 4
+
+Managed by Microsoft: 
+
+RD Web service : It is user interface or endpoint where user will be able to see the provisioned resources /icons:
+
+RD Broker : It orchestrates incoming connection 
+
+RD Gateway: It is a websocket for the incoming connection 
+
+ RD Resource directory : It is used to check the resources from the geographical database 
+
+ RD Geographical database: It contains the information like .rdp file and other provisioned resources or icons .
+
+Azure Diagnostics : It is used for diagnosing the issues or to check the health.
+
+12.Which RBAC role is required to configure start VM on connect. 1
+
+Desktop Virtualization Power on Contributor
+
+13. Mention the PowerShell command to add users to the application group in ARM AVD. 1
+
+new-azroleassignment
+
+14.  Which AVD agent is responsible for monitoring the health of AVD? 2
+
+Remote Desktop services Infrastructure Geneva agent is responsible for managing the health of AVD .
+
+15. What are the compulsory RBAC roles for users to connect to AVD? 2
+
+Azure role-based access control (Azure RBAC) helps to manage who has access to Azure resources, what they can do with those resources, and what areas they have access to.
+
+ Azure RBAC is an authorization system built on Azure Resource Manager that provides fine-grained access management to Azure resources.
+
+ 1. Desktop Virtualization User Role
+
+ 2. Virtual Machine User Login Role
+
+
+16. What is drain mode in AVD and how do we enable it? 2
+
+Drain Mode: It is a feature in AVD which restricts or prevents the new connections for session host . It is a feature which is highly used when we does not want any connection to land on specific session host , hence we enable drain mode so that no new connection cannot be made.
+
+We can enable the drain mode from Azure portal under Hostpool>Total Machines
+
+17. Mention the PowerShell command to create a host pool in ARM AVD.1
+
+new-azwvdhostpool
+
+18.Can I change a host pool from Pooled to Personal?  1
+
+No , We cannot change a host pool from pooled to personal .
+
+19. Why is targetisaadjoined key required?  1
+
+targetisaadjoined key is required for Entra MFA when connecting in Entra join. This has been replaced by  enablerdsaadauth.
+
+
+
+WMI KM
+
+1.	Give example for WMI      local query and Remote query
+
+
+Local Query -Get-WmiObject -Class Win32_OperatingSystem
+
+Remote Query -Get-WmiObject -Class Win32_OperatingSystem -ComputerName "RemotePC" -Credential (Get-Credential)
+
+Here are few other ways of initiating local query and remote query:
+
+Local query using the webem test tool 
+
+1. Connect to namespace root\CIMv2
+2. Query on webem test select * from Win32_BIOS
+
+Remote query using the webem tool :
+
+1. Connect to namespace of remote computer : \\ Computername (remote)\root\CIMV2
+
+2.	Query on Webem Test Select * from Win32_BIOS
+
+2.What is the WMI      arbitrator?
+
+WMI arbitrator is a component of WMI service that manages scheduling and execution of tasks received from WMI client process
+
+ It resides in the WMISVChost.exe and is implemented as the following static singleton instance : Wbemcore! cwmiarbitrator ::m_Parb
+
+ The arbitrator track queries and incoming client requests as tasks of object type : Wbemcore!cwmittask().
+
+ Examples of some information tracked for these tasks include Client process id , Client computer name , Last client activity, WQL text query  , Task submission etc.
+
+Results returned by executing these tasks retrieved from WMI provider processes, are held directly in WINMGMT SVChost.exe heap memory until retrieved by clients .
+
+ If the client does not specify WBEM_FLAG_FORWARD_ONLY to indicate a non-rewindable or single direction enumerator, then the complete result set will remain in WINMGMT heap memory for 20 minutes.
+
+3.	What is a WMI namespace?
+
+WMI namespace is a programming object that  manages the set of classes and objects . It specifically contains all the classes with the different resources defined as object . It contains the root folder and then after the further 
+
+It is a programming object that defines the scope for a set of clases and instances .It is essentially a container or enviroment where WMI provider classers are defined and  managed. Namespaces are used to organize classes that represents different managed environment. Provides a hierarchical organization  of classes.
+
+ A Namespace organizes information similar to folders in a filesystem. The top “folder” of the WMI namespace is always called “root”.
+
+ Default namespace : Root/Default
+
+  Root/CIMv2
+
+4.What is WMI CLASS ?
+
+A WMI class is a template or definition for the WMI objects and the instances. 
+
+Example of WMI classes is as follow:
+
+Win32_Bios, Win32_OperatingSystem
+
+5.What are WMI providers?
+
+WMI Providers are intermediary between WMI Service & objects. WMI Providers starts as
+
+a service name WMIPRVSE.exe whenever a query is made.
+
+This acts as a container and provides the requested information to the application/query.
+
+Each time a query is made from a different source, a separate service is started as WMIPRVSE.
+
+It runs in the background and is essential for monitoring, automation, and system management. Disabling it can break many Windows and enterprise features.
+
+The default startup type of WMI service is Automatic.
+
+WMI service depends on RPC.
+
+6. Which service is      essential for WMI to function?
+
+The RPC is the essential service for WMI to function and also WMI service(winmgmt) has to be running to make the WMI function .
+
+7. What tools can be used      to query or troubleshoot WMI?
+
+1. The tool used is WEBEMTest, which allows users to query and interact with WMI data.
+
+2. WMI Console (Wmimgmt.msc)
+
+4.	We can use PowerShell tool to test the WMI queries for local and remote queries.
+
+7.How does COM/DCOM relate to WMI?
+
+The following features of COM/DCOM defines how it is related to WMI:
+
+
+COM : COM is a language-independent,  object-oriented system to create software components in a binary standard which  can interact. COM promotes reuse of software components from different vendors. A COM application usually consists of an executable file and additional components such as dll files. Using COM different components communicate locally with other components within machine environment 
+
+DCOM : It is an extension to COM . It allows access to software components or objects located on a different computer It is used to exchange information between remote computer or a  system located in lan or wan or even on internet.
+
+ Restricted activation and restricted access are  by default given to administrators and are disabled for standard  users
+
+ DCOM Has four aspects of security :
+
+ 1. Access security
+
+2.Launch Security
+
+3. Identify
+
+5.	Connectionpolicy
+
+COM and DCOM are essential components for WMI as they act as a communication between, Windows API, WMI infrastructure, and WMI providers.
+
+8. Where is the WMI      repository located?
+
+C:\Windows\System32\wbem\Repository
+
+9. What Windows logs are      used for WMI troubleshooting?
+
+Here are few Windows logs used for WMI troubleshooting : 
+
+
+1.WMI uses Event Tracing (ETW) and events can be obtained through the Event Viewer user interface or the Wevtutil command line tool. For more information, see Tracing WMI Activity. WMI service activity is recorded in the WMITracing.log file.
+ 
+WMI uses event tracing to record WMI service activity.
+
+ Event notification support
+
+ Query language support
+
+ Security support
+
+ Scripting access to performance counter data.
+
+The command line tool wevtutil  is used to enable WMI event tracing to locate WMI events.
+
+Here are few other windows logs used :
+
+1. WMI-Activity Logs
+
+Located in Event Viewer under Applications and Services Logs → Microsoft → Windows → WMI-Activity.
+
+ 2.System and Application Logs
+
+Standard System and Application logs can also provide context for WMI issues, especially if errors originate from DCOM permissions, service failures, or firewall 
+
+
+WMI KM (Original)
+
+What is the command used to launch WMI Management console?
+What is the command used to launch WMI tester tool in Windows Server?
+What is the command used to launch WMI tester tool in Windows Server?
+What is the command to get the WinRM listener configuration ?
+What are the 2 major ports used for WINRM communication?
+What is WinRM? What is WMIPrvse?
+What is MMC ? What is its purpose?
+What is Task scheduler, write down its service name. What are the two types of sessions?
+What is event viewer? What are different types of events found in event viewer? What is the command to launch event viewer?
+What is Event Forwarding in Windows? What are the ways events can be forwarded to the collector? Explain each ?
+What is COM & DCOM ? What is the command to launch DCOM configuration tool? Default permissions for DCOM?
+What are WMI Classes, Instances and Namespaces? WMI Namespaces found by default in Newly Installed OS? Command to repair WMI repository?
+What are 4 basic components in WMI Architecture? Explain WMI Architecture? What is the service name of WMI and what is its startup type?
+
+RDP Shortpath KM 
+
+1.What is RDP shortpath?
+
+RDP Shortpath establishes a UDP-based transport between a local device Windows App or the Remote Desktop app on supported platforms and session host in Azure Virtual Desktop.
+
+ By default, the Remote Desktop Protocol (RDP) begins a TCP-based reverse connect transport, then tries to establish a remote session using UDP.
+
+ If the UDP connection succeeds the TCP connection drops, otherwise the TCP connection is used as a fallback connection mechanism.
+
+1.Managed networks, where direct connectivity is established between the client and the session host when using a private connection, such as Azure ExpressRoute or a site-to-site virtual private network (VPN).
+
+ * A connection using a managed network is established in one of the following ways:
+
+ * A direct UDP connection between the client device and session host, where you need to enable the RDP Shortpath listener and allow an inbound port on each session host to accept connections.
+
+ A direct UDP connection between the client device and session host, using the Simple Traversal Underneath NAT (STUN) protocol between a client and session host. Inbound ports on the session host aren't required to be allowed.
+
+ 
+2.Public networks: where direct connectivity is established between the client and the session host when using a public connection.
+
+ There are two connection types when using a public connection, which are listed here in order of preference:
+
+ *A direct UDP connection using the Simple Traversal Underneath NAT (STUN) protocol between a client and session host.
+
+ *An relayed UDP connection using the Traversal Using Relay NAT (TURN) protocol between a client and session host.
+
+ To enable RDP shortpath for managed network you must enable a UDP listener on the session host (on port 3390) and it can be changed to use a different port.
+
+2.Mention the key benefits of RDP Shortpath
+
+There are several benefits of RDP Shortpath : 
+
+1.Using URCP to enhance UDP achieves the best performance by dynamically learning network parameters and providing the protocol with a rate control mechanism.
+
+ 2.Higher throughput.
+ 
+ 3.When using STUN, the removal of extra relay points reduces round-trip time improves connection reliability and     the user experience with latency-sensitive applications and input methods.
+
+4.Higher Efficiency 
+
+6.	UDP-based transport offers better connection reliability and more consistent latency.
+
+3. What is MSIX app attach? Mentions few of its features
+
+MSIX app attach is Microsoft's application layering technology, designed for AVD which uses the new MSIX package format to separate applications from the core operating system and deliver applications to user dynamically.
+
+ Applications are not installed locally on Session Host or image (OS image), making it easier to manage custom images for the Session Host, reducing operational overhead and cost for the organizations. Applications run within containers with separate user data, the operating system, and other applications, increasing security and making them easier to troubleshoot.
+
+Features :
+
+1.Removes need of Repackaging: It uses streaming technology to optimize bandwidth by only downloading the difference between an existing package and an upgrade.
+
+2. Creates Separation: The application lives inside a virtual application container, which ensures strict isolation between the application and the operating system.
+
+3. Supports Silent Installation: Capturing products is performed similarly to MSI packaging. MSIX supports converting .exe installers and MSI packages unattended.
+
+4. OS remains unmarked: Once the application is de-staged, no trace file is left within the system (like the application was never there).
+
+ 5.Reduces Time: It takes less time for a user to login.
+
+4.Explain staging in MSIX.
+
+Staging involves two steps:
+
+ 1. Mounting the VHD(X)/CIM to the VM.
+
+ 2. Notifying the OS that the MSIX package is available for registration by mounting the apps to the Host pool (Session Host).
+
+5. Explain the MSIX package structure with diagram
+
+MSIX package contains following structure : 
+
+1.Package Payload: Application files
+
+  a. App Payload: The payload files are the appcode files and assets when building the image (icon).
+
+ 2. Footprint Files:
+
+  * AppxBlockMap.xml: The package blockmap is an xml file which Contains a list of application files, indexes, and hashes for each block of data stored in a pacakge . Secured with a digital signature.
+
+ 
+ * AppxManifest.xml:The pacage manifest Contains info needed to deploy, display, and update the app (identity, dependencies, etc.).
+
+  * AppxSignature.pfx:  This file is Generated when the package is signed; all packages must be signed before you run them (validation).
+
+* Code Integrity: MSIX code integrity ensures app security and tamper-protection through cryptographic signatures. It uses AppxSignature.p7x (digital signature), AppxBlockMap.xml (file hashes), and AppxMetadata\CodeIntegrity.cat (catalog of PE files) to validate that files haven't been altered.
+
+5.Write the steps from where you can enable Start VM on Connect in AVD
+
+We can enable start vm on connect from the azure portal->resource group->hostpool  or by running the command Update-azwvdhostpool
+
+7.	Explain de-registration in MSIX
+Deregister: Removes a registered but non-running MSIX package for a user. Occurs during user sign-out; application data specific to the user is pushed to the local user profile. This process is crucial for maintaining system performance and ensuring that the application can be reinstalled later if needed.
+
+8.	Can MSIX app attach be used with both persistent and non-persistent virtual desktop infrastructures?
+Yes
+
+9. What is auto scale and how it works?
+
+
+Auto scale lets you scale your session host Virtual Machines (VMs) in a host pool up or down according to a schedule to optimize deployment costs (by turning session hosts on and off).
+
+Autoscale uses a scaling plan  that defines the schedules for scaling session hosts in a host pool. You can assign one scaling plan to multiple host pools. Each host pool can only have one scaling plan assigned to it.
+
+ A scaling plan can only operate in its configured time zone.
+
+Here are four phases of autoscaling :
+
+Ramp-up : The ramp-up phase of a scaling plan schedule is usually at the beginning of the work day, when users start to sign in and start their sessions. In this phase, the number of active user sessions usually increases at a rapid pace without reaching the maximum number of active sessions for the day yet.
+
+ Peak hours : The peak phase of a scaling plan schedule is when your host pool reaches the maximum number of active user sessions for the day. In this phase, the number of active sessions usually holds steady until the peak phase ends. New active user sessions can be established during this phase, but usually at a slower rate than the ramp-up phase.
+
+ Ramp-down : The ramp-down phase of a scaling plan schedule is usually at the end of the work day, when users start to sign out and end their sessions for the evening. In this phase, the number of active user sessions usually decreases rapidly.
+
+ Off-peak hours : The off-peak phase of the scaling plan schedule is when the host pool usually reaches the minimum number of active user sessions for the day. During this phase, there aren't usually many active users, but you may keep a small amount of resources on to accommodate users who work after the peak and ramp-down phases.
+
+
+9.	How many VMs need to be in a host pool for autoscale to work properly?
+Atleast one
+
+
+Fslogix
+
+What is FSLogix? How is it different from other profile solutions?
+
+FSLogix is a type of user profile solution which enhances and enables a consistent experience for Windows user profiles in virtual desktop computing environments. FSLogix is not limited to virtual desktop environments; it could be used on a physical desktop where a more portable user experience is desired.
+
+Others Profile Solutions                                      
+
+1. Uses Copy/paste to provide the user profile        
+
+2. Slower to load user profile.                            
+
+3. Could be platform limited                                  
+
+4. Limited scalability                                                   
+
+5. Office data redirection might be unavailable.    
+
+6. Concurrency is not supported                         
+
+7. Could be complicated to configure                   
+
+
+FSLogix Profile
+
+1. Uses mount/unmount to dynamically attach the profile container.
+
+2. Faster to load user profile.
+
+3. Can be used on any platforms (AVD, RDS, Citrix).
+
+ 4. Highly scalable.
+
+ 5. Office data redirection is available.
+
+6. Concurrency is supported.
+
+7. Easy to configure
+
+
+2. Mention few features of FSLogix
+
+
+1. It provides the roaming profile solution between remote computing session hosts.
+2. Minimize the login or sign in time in VM environment 
+3. It provides the scalability to run concurrent sessions 
+4.It provides the Office redirection feature separately by adding ODFC container
+5.Provides a local profile experience 
+6.Simplify the management of apps and gold images.
+
+3. How many types of container does FSLogix offer? Explain them
+
+FsLogix offers two types of container :
+
+1. Profile Container : This container is used to manage all the  user profile related data 
+
+This is located at the location HKLM\Software\Fslogix\Profile
+
+A profile container is all the data related to a user's profile, which is directly stored in VHD(X).
+
+ It's a full remote profile solution for non-persistent environments.
+
+ Redirects the entire user profile to the remote location.
+
+ Its configuration defines how and where the profile is redirected.
+
+ The entire profile except "Redirection.XML" is included in the profile container.
+
+ Profile container includes all the benefits of office container.
+
+ Profile container VHD(X) will contain the entire windows profile for the user except for:
+
+The temp folder location
+
+The IE (Internet Explorer) crash folder location
+
+Exclusions are done with a "Redirection.XML" file.
+
+2. ODFC Container: An ODFC container is a container type which is focused on storing profile content that is unique to Microsoft Office applications.
+
+Office container redirects only areas of the profile that are specific to Microsoft Office apps.
+
+A Default ODFC container includes:
+ 
+Office Activation
+Outlook
+Outlook personalization
+SharePoint
+OneDrive
+Skype for Business (legacy support)
+
+ODFC containers are an optional configuration.
+
+
+4.How many types of Profile are available in FSLogix profile container. Explain them
+
+  There are 4 profile types available in FSLogix profile container 
+0: Normal profile is provided in this setting.
+1: Read Write permissions are provided in this configuration
+2: Read only permissions are provided in this configuration
+3: It tries to provide the read and write access, but it falls back to read only if failed.
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
