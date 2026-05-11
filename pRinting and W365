@@ -1,0 +1,178 @@
+Rds
+
+RD Virtualization Host : RD Virtualization Host is a Remote Desktop Services role service. RD Virtualization Host integrates with Hyper-V to provide virtual machines that can be used as personal virtual desktops or virtual desktop pools. An RD Virtualization Host server has the following functions: - Monitoring virtual machine guest sessions and reporting these sessions to the RD Connection Broker server. - Preparing the virtual machine for a remote desktop connection when requested by the RD Connection Broker server.
+
+
+AVD
+
+Authentication in AVD
+When accessing AVD, there are 3 authentication phases:
+•	Cloud service authentication
+•	Remote session authentication
+•	In-session authentication
+Troubleshooting an authentication issue during any of these 3 phases, requires the same steps as troubleshooting the same phase on an Azure VM or on-prem device.
+________________________________________
+Authenticating to the AVD service (Cloud service authentication)
+AVD supports different types of identities depending on which configuration you choose: On-premises identity, Hybrid identity, Cloud-only identity, Federated identity, External identity.
+To access AVD resources, you must first authenticate to the service by signing in with a Microsoft Entra ID account. Authentication happens whenever you subscribe to retrieve your resources, connect to the gateway when launching a connection or when sending diagnostic information to the service. The Microsoft Entra ID resource used for this authentication is Azure Virtual Desktop (app ID 9cdead84-a844-4324-93f2-b2e6bb768d07).
+You can also make use of MFA, Passwordless authentication, Smart card authentication.
+For more details, see: Cloud service authentication 
+________________________________________
+Authenticating to an AVD VM (Remote session authentication)
+Authenticating on an AVD VM works exactly the same as when connecting via RDP to any other Azure VM.
+You can also make use of Single Sign-On (SSO).
+Azure Virtual Desktop supports both NT LAN Manager (NTLM) and Kerberos for session host authentication, however Smart card and Windows Hello for Business can only use Kerberos to sign in. To use Kerberos, the client needs to get Kerberos security tickets from a Key Distribution Center (KDC) service running on a domain controller. To get tickets, the client needs a direct networking line-of-sight to the domain controller. You can get a line-of-sight by connecting directly within your corporate network, using a VPN connection or setting up a KDC Proxy server .
+For more details, see: Remote session authentication 
+________________________________________
+In-session authentication
+This is related to authenticating to applications and web sites within the remote session.
+Here it is important to understand better the type of application used and its authentication requirements, as each may require a different approach.
+RDP can provide credential delegation inside the session, to some degree, but different security settings, outside the control of AVD, may also prevent this from happening.
+AVD in-session passwordless authentication using Windows Hello for Business  or security devices like FIDO keys when using the Windows Desktop client .
+For in-session use of smart cards, you need to install the smart card drivers also on the session host and enable smart card redirection.
+For more details, see: In-session authentication 
+
+
+Azure Avd Framework 
+In the Azure Virtual Desktop Service framework, there are three main components:
+•	AVD Service
+•	Remote Desktop Client
+•	Virtual Machine
+On a Virtual Machine, we have:
+•	AVD Agent
+o	AVD Agent Bootloader
+•	SxS Stack
+•	Geneva Monitoring Agent
+
+RDP gateway 
+
+The Gateway service (RD Gateway) is a websocket service that provides the Remote Desktop Protocol (RDP) connectivity from a user's device wherever they're connecting from to the session hosts providing their desktops and apps.
+The RD Gateway securely connects users to their sessions over the Internet.
+Aside from the session hosts themselves, depending if RDP Shortpath (UDP) is being used or not, the RD Gateway may or may not be the only other role used throughout the lifespan of a session.
+________________________________________
+When a user connects to a desktop or app from their feed, the RDP connection is established as follows:
+1.	All remote sessions begin with a connection to Azure Front Door, which provides the global entry point to Azure Virtual Desktop. Azure Front Door determines the Azure Virtual Desktop gateway service with the lowest latency for the user's device and directs the connection to it
+2.	The gateway service connects to the broker service in the same Azure region. The gateway service enables session hosts to be in any region and still be accessible to users.
+3.	The broker service takes over and orchestrates the connection between the user's device and the session host. The broker service instructs the Azure Virtual Desktop agent running on the session host to connect to the same gateway service that the user's device has connected through.
+4.	At this point, one of two connection types is made, depending on the configuration and available network protocols:
+a. Reverse connect transport: after both client and session host connected to the gateway service, it starts relaying the RDP traffic using Transmission Control Protocol (TCP) between the client and session host. Reverse connect transport is the default connection type.
+b. RDP Shortpath: a direct User Datagram Protocol (UDP)-based transport is created between the user's device and the session host, bypassing the gateway service.
+
+RDP diagnostic
+The Diagnostics service (RD Diagnostics) is an event-based aggregator that marks each user action on the AVD deployment (end-user or administrator) as a success or failure. Administrators can query the aggregation of events to more easily identify a failing component.
+In AVD we leverage our diagnostic role to troubleshoot failures. We can get everything except network.
+•	AVD logs a diagnostic activity any time a user interacts with the system. This includes connection process, roles involved in the transaction, error messages, tenant information, and user information
+•	The diagnostic service aggregates activity information based on events generated by all AVD service components: RDP clients, service roles (Rdweb, Gateway, Broker), service components from customer VM (RD Agent, SxS stack)
+•	All this data is sent to AVD Kusto database where can be reviewed
+The diagnostics role service will cover the following scenarios:
+•	Connection activities: A connection activity is triggered from the end user using one of our apps that support AVD (see client guidance for more information). On failed activities use the user UPN to identify at which component the connection didn't succeed.
+•	Management activities: A management activity is triggered by the infrastructure administrator configuring the system. On failed activities use the UPN to identify what action caused the issue.
+Diagnostics Data Flow
+•	Remote Desktop client sends connection and feed subscription information
+•	RD Session Host agent sends additional information on the connection and health information
+•	This data travels through the system where the roles that are part of that interaction enhance that data by additional information which the client doesn’t has or might be no accurate.
+•	On the named interaction one or more components send data to the diagnostics service which correlates the data and stores it in the SQL database.
+
+
+Agent Bootloader
+The AVD agent bootloader is the executable that loads the AVD agent.
+________________________________________
+Agent Heartbeat
+There are 2 heartbeats in AVD
+1.	Agent Heartbeat to the broker is to make sure the VM is alive and ready to do orchestration
+2.	Stack Heartbeat to the client through the wvd gateway is for the client to be able to detect if the connection is lost
+The AVD agent sends a heartbeat to the AVD service (Broker) every 30 seconds.
+This is to make sure that the VM is alive, ready to do orchestration, and report health status.
+If the Broker misses a number of heartbeats from the AVD agent, it will mark the AVD VM as unhealthy and stop sending new connections to it until the underlying issue is resolved and heartbeats are being received successfully again.
+________________________________________
+RDSAGENT.WVD certificates
+These are certificates that the Agent uses to connect to Geneva backend over HTTPS. There is code in the Agent to delete the expired certs.
+SXS network stack 
+The SxS Stack on an AVD VM sends packets to the client every 1 second which is the heartbeat, and the client watches that. If the client misses 8 of those packets, it enters in a state of concern (warning state), if it misses 12 more, the client is going to declare that the connection is down and disconnect then try to reconnect.
+
+Printing 
+
+A page description language (PDL) is a language that describes the appearance of a printed page in a higher level than an actual output bitmap.
+
+ PCL
+Printer Command Language, more commonly referred to as PCL, is a page description language (PDL) developed by Hewlett-Packard as a printer protocol and has become a de facto industry standard. Originally developed for early inkjet printers in 1984, PCL has been released in varying levels for thermal, matrix, and page printers. HP-GL/2 and PJL are supported by later versions of PCL.
+PS
+PostScript (PS) is a page description language in the electronic publishing and desktop publishing business. 
+XPS
+XML Paper Specification (XPS): An XML-based document format. XML Paper Specification (XPS) specifies the set of conventions for the use of XML and other widely available technologies to describe the content and appearance of paginated documents. 
+EMF Data Type 
+Enhanced Metafile (EMF) data consists of instructions to call GDI functions. The print processor must call the GDI functions to render printable images. The GDI functions make calls to the printer driver's printer graphics DLL(opens in a new tab), which renders the image and sends it to the spooler as RAW data (by calling EngWritePrinter(opens in a new tab)). 
+XPS Printing Features 
+The XPS print path and the XPSDrv printer drivers offer the following advantages over the GDI-based printer drivers in the GDI print path: 
+•	Improved Color Printing(opens in a new tab)
+•	High-Fidelity Print Output(opens in a new tab)
+•	Improved End-User Experience(opens in a new tab) 
+•	Improved Spooling and Rendering(opens in a new tab)
+•	Extensible Architecture
+•	RAW Data Type 
+•	RAW data can be sent to a print monitor without further processing. The print processor just sends this data back to the spooler (by calling WritePrinter, described in the Microsoft Windows SDK documentation), sometimes inserting form feeds. An example of a RAW data file is one consisting of printer control language (PCL) commands. Print jobs are sent from client to server in RAW format if either the client or the server does not support NT-based-operating system EMF, or if a server administrator has disabled EMF support.
+
+SPLWOW64.EXE process allows 32-bit applications running on a 64-bit Windows to interact with the 64-bit print drivers that would normally be loaded into the process during printing (Print Preview, Print UI Options, etc.).
+
+If the print queue is set to disable Advanced Options (which disables using EMF spooling), then the print job will be rendered under the SPLWOW64.exe process.
+
+WSD
+WSD is a protocol for communicating with a device (in this case a networked scanner) over the network 
+WSD allows network-connected IP-based devices to advertise their functionality and offer these services to clients by using the Web Services protocol.
+WSD-based devices and clients communicate over the network using a series of SOAP (Simple Object Access Protocol) messages over UDP and HTTP(S).
+WSD provides a network plug-and-play experience that is similar to installing a USB device.
+Web Services on Devices (WSD) extends the existing Web services architecture to resource-constrained devices, such as PDAs, computer peripherals, computing appliances, and consumer electronics. WSD is one of four technologies that comprise the Network Connected Device (NCD). Those four are: 
+•	PnP-X — a set of extensions to Plug and Play (PnP) that integrate NCDs into the Windows PnP subsystem, making the NCD appear as a local device inside of Windows and providing an installation experience that is similar to attaching a physically connected device. 
+•	Function Discovery (FD) — a new API makes it easy for applications to enumerate and use devices of a specific type, regardless of the way in which they are connected to the computer. Function Discovery works through providers for the various device types to enumerate available devices (for example, PnP, registry, WSD, SSDP, NetBIOS, and third party providers). 
+•	WSD — an implementation of the Device Profile for Web Services (DPWS) specification that enables devices to interact with Microsoft Windows over an IP-based network. The WSD functionality is part of the Rally licensing program (http://www.microsoft.com/rally/). The DPWS specification is available free of charge. This specification is under the licensing terms of Rally. 
+•	Publication Services — a new Windows service that enables client applications to publish resources so that they can be discovered by other computers on the same subnet. Each application can dynamically register and unregister individual resources that it wants published. 
+
+Client-Side Rendering Components 
+Client-side rendering functionality is implemented in win32spl.dll, the network print provider. 
+The offline printing functionality is implemented in printcom.dll, which provides online/offline notifications to win32spl.dll. 
+The client-side rendering components, printcom.dll and win32spl.dll, are both loaded in the Print Spooler service, spoolsv.exe, when it is started. 
+Disabling Client-Side Rendering  
+Client-side rendering is enabled by default on Windows Vista and Windows Server 2008 and is controlled by the print server that hosts the shared printer. Client-side rendering may be disabled via Group Policy or on the Sharing tab of the properties for specific printers on the print server
+
+Printer Pruning 
+When a printer is deleted from a print server, the corresponding Active Directory object is removed. However, there might be times when a printer is temporarily unavailable, such as when a print server is being rebuilt or is powered off. Under these circumstances, you must remove the orphaned entries removed because Active Directory must reflect only the printers that are currently available. 
+
+A program called the printer orphan pruner helps you remove the orphaned entries by checking each domain controller for orphaned printers. By default, if the pruner cannot see a printer three times in a row at 8-hour intervals, it assumes that the entry is no longer valid and deletes it.
+Print Defaults – These are global settings for the printer. When a printer is installed via Point and Print, the Print Defaults are downloaded and configured on the client.  
+Print Preferences – These are settings that a specific to the user and are stored in the user's profile. When printing, the user's devmode is validated by the driver to confirm that the devmode is compatible. In some cases with WWAN and Branch Office Printing, having Print preferences can cause a delay, as the client may need to contact the print server over the WAN to validate the devmode.  
+
+
+IPP (Internet Printing Protocol) is a protocol that allows printing using HTTP, which theoretically allows printing from anywhere. 
+On Windows Server IPP is implemented on print services and relies on the IIS web server. 
+The installation of Internet Printing on Windows Server sets up a self-service web portal that allows the user to connect a printer to their workstation (Internet Explorer only) and manage print queues.
+
+Printer Redirection is the feature that allows a local printer to be mapped on a remote machine, and allows printing across the network or Internet.
+Printer redirection was first implemented in Windows 2000 Server. Printer redirection enables the users to print to their locally installed printer from a terminal services session. The Terminal Server client enumerates the local print queues to detect the locally installed printers. This list is presented to the server and server creates the print queue in the session.
+Group Policy 
+Computer Configuration>Administrative Templates>Windows Components>Remote Desktop Services>Remote Desktop Session Host> Do not allow client printer redirection /Disable
+
+TSSV2
+When you encounter printing issues on Windows, it can be challenging to identify the root cause. There can be various reasons why a printer might not work correctly, including driver issues, network connectivity problems, or configuration issues. In such situations, it can be helpful to collect diagnostic data to troubleshoot the problem effectively. Microsoft provides a script called TSSv2.ps1, which collects the necessary data to help you identify and fix printing issues.
+
+Print BRM
+PrintBRM is a command-line tool used to manage printer configurations on Windows servers, allowing for backup, restoration, and migration of printer settings, ports, and drivers.
+
+W365
+
+Windows 365 Enterprise is a cloud-based service that creates Windows VMs (Cloud PCs) for users, providing the benefits of Microsoft 365. It uses Microsoft Intune for management, Microsoft Entra ID for identity and access control, and Azure Virtual Desktop (AVD) for remote connectivity.
+With the Windows 365 service, you can also:
+•	Configure provisioning policies to create custom Cloud PC configurations.
+•	Customize your Cloud PC configurations to support different user needs.
+•	Pre-install apps in your custom Cloud PC image and push more apps to them through Microsoft Intune.
+Windows 365 dedicated Cloud PC	Windows 365 Frontline Cloud PC
+A dedicated Cloud PC can be assigned and licensed to only one user.	A shared Cloud PC is a resource designed for specific purposes that can be allocated and licensed to multiple users.
+License is assigned to a user.	License is not assigned to individual users but rather at the tenant level.
+For each license, you can provision one CPC for one user.	For each license, you provision three Cloud PCs.
+When a customer purchases 100 licenses, they are entitled to provision 100 CPs.	When a customer purchases 100 licenses, they are able to provision up to 300 Cloud PCs. However, only 100 of these can be active simultaneously.
+Dedicated Cloud PCs are always operational.	Shared Cloud PCs are powered off when a user disconnects from the session, making the virtual machine available for another user.
+
+
+
+ 
+
+
