@@ -1,0 +1,902 @@
+WMI 
+Lewis Liu
+Microsoft Server Core Team
+
+Agenda
+1. WMI basic
+2. WMI T-Shooting
+3. WMI advance
+What is WMI?
+• WMI is the Microsoft implementation of the Common Information 
+Model (CIM) initiative developed by the Distributed Management 
+Task Force (DMTF). 
+• In order to unify the management techniques for the sake of 
+simplicity, the DMTF defined CIM to represent real-world 
+manageable entities in a unified way. 
+• The CIM object model is an object data model using terms and 
+semantic that is unique to all constructors and software 
+developers. This object model is implemented in a database called 
+the CIM repository.
+
+
+Who need WMI?
+• Automation of IT Admin Tasks
+• Health Monitoring
+• Inventory
+• Troubleshooting
+
+
+WMI Architecture
+WMI Consumers
+(Management
+Applications)
+WS-Mgmt.
+C/C++
+Client
+WMI Listener
+For WS-Mgmt
+3
+.NET Client Applications
+Windows Forms
+Web Forms
+Scripts
+WMI Scripting API
+System Management
+6
+COM Inter-Op
+WMI COM API
+COM/DCOM
+5
+4
+WMI Infrastructure
+COM/DCOM
+WMI
+Repository
+WMI Core
+(CIM Object Manager)
+3
+2
+1
+COM Inter-Op
+SNMP WMI 
+Provider
+WMI 
+Provider
+s
+Managed
+Objects
+SNMP 
+Managed entity
+Native C/C++
+Cimv2 WMI 
+Provider
+Windows (Win32)
+Managed entity
+Any WMI 
+Provider
+…
+Any 
+Managed entity
+(Native Code)
+2
+1
+System.Management
+(Instrumentation Objs)
+.NET WMI Provider
+.NET Managed 
+App/entity
+.NET C#, VB.NET, etc
+CIM OBJECT MANAGER
+• CIM: Common Information Model
+• A component in the WMI infrastructure that handles the 
+interaction between management applications  and providers. 
+• The CIM Object Manager supports services such as event 
+notification, remote access, and query processing. 
+• The CIM Object Manager also grants access to the WMI 
+repository.
+
+
+WMI CLASS
+• WMI class is a template for a type of managed object.  It 
+represents that entity in terms of the data, methods, and 
+properties exposed by that entity
+• WMI classes define the basic units of management. 
+• For example, the Win32_LogicalDisk class is a template for all 
+logical disks that occur in the Windows environment. WMI can use 
+the class template to generate an instance of Win32_LogicalDisk 
+for each disk installed on a computer.
+WMI Classes
+http://msdn.microsoft.com/en-us/library/aa394554(VS.85).aspx
+
+
+WMI PROVIDER
+• A COM server that communicates with managed objects to access 
+data and event notifications from a variety of sources, such as the 
+system registry or an SNMP device. 
+• Providers forward the information to the CIM Object Manager for 
+integration and interpretation.
+
+
+WMI PROVIDER SETUP
+Mofcomp.exe
+(compiler)
+REGSVR32.EX
+E
+MOF
+Repository
+
+
+DLL
+DCOM
+Provider: Mof and dll
+.MOF file 
+• An ascii file which contains the class definitions and the provider that 
+need to be registered into the repository.  
+• Mofcomp.exe compiles the MOF file which registers it into the WMI 
+repository.  Once compiled, the classes, namespace, and provider are 
+registered in the WMI repository. 
+• By reading the repository registrations, the WMI service knows which 
+provider will handle the request for the Provider 
+.dll File
+• A DCOM object which interacts with the manageable entity and 
+abstracts the native API’s of the manageable entity from the WMI 
+service.  
+• As the WMI service acts a broker between the WMI clients and provider, 
+the provider dll’s act as a broker between the manageable entities and 
+the WMI service.  
+
+
+• Regsvr32.exe is the tool used to register the provider .dll with DCOM.
+WMI Processing Flow
+Repository Namespaces
+ROOT
+Select * from Win32_Process
+WMI 
+Client #1
+WMI SVC
+DEFAULT
+CIMV2
+RPC Thread 
+#1
+RPC Thread 
+#2
+CORE QUEUE
+WMI 
+Client #2
+Req #1
+Req #2
+SMS
+CoreQueue Thread #1
+Select * from CCM_Client
+RSOP
+CoreQueue Thread #2
+
+
+WMIPRVSE.EXE
+CIMWIN3
+2.DLL
+Win32_Process 
+Class Definition
+WMIPRVSE.EXE
+SMSCLIE
+NT.DLL
+WMI Object Model relationships
+Simplified WMI Object Model relationships between the WMI locator, 
+service, properties, methods, qualifiers, and other objects 
+
+
+The elements of WMI Object Model -1
+• Locator Used to connect to the WMI service on a computer.
+• Service Used to connect to the WMI service on a computer and is 
+the main point of contact to WMI for programs.
+• Objects Fundamental representations of computer elements and 
+are used by WMI and your scripts to identify to providers which 
+specific elements that you want manipulated.
+• Events Changes to WMI objects. Events can be captured as 
+objects and then manipulated in the same ways as any other 
+objects, except that they cannot be changed or saved in WMI.
+
+
+The elements of WMI Object Model -2
+• Properties Supplies descriptive or operational information about 
+an object. 
+• Methods Actions that you can execute on objects. 
+• Qualifiers Characteristics of objects, properties, and methods. For 
+example, a qualifier for a property might indicate that it is read
+only, or it might list the allowable values for the property. A 
+qualifier for an object might be that it is read-only.
+
+
+WMI Security
+•Golden rule: WMI is a broker, it doesn’t do 
+anything that the client is not allowed to do.
+ Leverages impersonation
+ Expects the manageable entity to validate the access
+•WMI actions are subject to access checks at the 
+namespace level
+ Read access
+ Method execution
+ Write Operations
+ Remote Access
+ Security Changes (DACL)
+
+
+WMI Dependencies
+• DCOM/COM, Registry, Filesystem, Repository and RPC are 
+the basic underlying dependencies of WMI. 
+• WMI provides one common interface that is built on DCOM.
+• A Provider installation requires a provider .dll and a .mof file.
+
+
+WMI repository
+What is the Repository?
+•-By default it is a place where Class information is kept as a 
+reference for the OS
+What is a Normal Repository size?
+• 10-50M Objects.data file
+How can you see what's in the repository?
+• You need to open the objects.data file in a hex editor like ultra 
+edit
+• The data in the repository is not in chronological order
+
+
+Files in Repository folder
+• OBJECTS.DATA      - The page-based data file. It has all the 
+repository objects indexed by hash codes. 
+• INDEX.BTR            - The page-based BTree index file. It has all the 
+indexes (hash codes) for the objects in OBJECTS.DATA.
+• MAPPING.VER       
+ - The version file. It saves the information to 
+tell WMI service which mapping file below has the latest mapping.
+• MAPPING1.MAP      - The mapping file A. It has the mapping from 
+each transactional logical page ID to physical page ID. 
+• MAPPING2.MAP      - The mapping file B. Same as 
+MAPPING1.MAP
+
+
+WMI repository corruption
+• The Repository corruption is EXTREMELY difficult to try and track 
+down. Some common causes for corruption are improper 
+shutdowns of machines and 3rd party filter drivers that are 
+having issues. 
+
+
+WMI repository Rebuild
+One of the most encountered WMI namespace corruption error is 
+0x8004100E
+run winmgmt /resetrepository
+• Side effect:
+1. All 3rd party WMI namespace will be deleted. 
+2. The rebuild only restores default OS WMI namespace.
+3. Some Application need to be reinstalled to recovery their WMI 
+namespace.
+Note:
+• Rebuild the WMI repository should always be the last option for t-Shooting 
+WMI issue.  
+• A Backup operation of the old repository is required.
+
+
+Manually rebuild the WMI repository
+1. Open A CMD Prompt
+2. wmimgmt /resetrepository
+3. Cd windows\system32\wbem
+4. for /f %s in ('dir /b /s *.dll') do regsvr32 /s %s
+5. cd /d c:\
+6. for /f %s in ('dir /s /b *.mof *.mfl') do mofcomp %s
+
+
+Buffer thresholds
+• The WMI core gathers the data in a buffer until it can be delivered 
+to the client. If the client is slow or fails to respond, WMI will 
+continue to hold on to the data until the internal buffers reach the 
+defined threshold limits. 
+• When these threshold limits are reached the WMI service is 
+considered to be under stress. In this situation the service slows 
+down  the responsiveness of the providers by injecting sleep 
+delays. This is done to give the WMI client(s) a chance to catch up. 
+• Depending on how much stress the service is under these delays 
+could be as large as 60 seconds.
+• The buffer threshold key is:
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\WBEM\CIMOM
+"Low Threshold On Events (B)"="1000000"
+"High Threshold On Events (B)"="2000000"
+
+
+Characteristics 
+1. Repository and security changes
+2. WPP Tracing
+3. Event Log Tracing
+4. Debugging Options for nasty WMI errors
+5. New WMI Service switches
+
+
+Enhancements
+1. WMI Namespace security
+•Auditing
+•Security settings configurable via scripts and MOF files 
+2. WMI Tracing
+•Windows software trace preprocessor (WPP)
+•WMI-Activity Event Log (ETW) 
+3. CIM repository enhancements
+•Addressing repository corruption issues
+•WMI Migration 
+
+
+WMI provider enhancements - 1
+Existing Providers:
+• Scripting of printers, services, reg keys, Dcom apps, and WMI 
+namespace security.
+• You can also script the security of Win32 Services.  They do not 
+have to be admin or power users now.
+• You can grant a plain user the ability to stop and start a 
+service. 
+• Hardware and software inventory 
+
+
+WMI provider enhancements - 2
+New Providers:
+• Boot management (no Boot.ini anymore)
+• Trusted Platform Module (TPM)
+• Volume Encryption
+• DFS Configuration and monitoring
+• Software licensing
+
+
+WMI provider enhancements - 3
+Difference:
+• Performance counters - the model has been changed due to 
+arch issues.  the way the counters are exposed have changed 
+under the covers to make them more reliable.  No more 
+synchronization is needed. 
+• Windows Parental control - you can prevent access to 
+certain areas of the OS and prevent internet access. 
+• Terminal Server - active sessions can be managed, you can 
+through WMI force a disconnect of an active session
+
+
+Performance counter
+Wmiadap
+http://msdn.microsoft.com/en-us/library/aa394528(VS.85).aspx
+• Beginning with Windows Vista, the transfer of data from the 
+performance libraries and the refresh of classes derived from 
+Win32_PerfRawData and Win32_PerfFormattedData is done 
+by the WmiPerfClass and WMIPerfInst providers and does not 
+require the AutoDiscovery/AutoPurge (ADAP) process. 
+• The WmiPerfClass provider updates WMI Performance Counter 
+Classes only when a new performance object is added.
+
+
+WMI Tracing
+• No more WMI logs. Now we have WPP trace preprocessor (WPP)
+• Event Tracing for Windows (ETW), displayed in the Windows Event 
+Log Viewer. But by default, activity reporting is disabled.
+Description on how to turn on WMI Event Tracing.
+http://msdn2.microsoft.com/en-us/library/aa826686.aspx
+
+
+WPP Basics
+WPP is for software tracing
+Its a light-weight standard tracing facility
+It’s a layer on top of ETW
+There are trace providers and trace consumers
+Tracing is always available and activated on demand.
+Easy to implement and supports Windows 2000 
+Traces can be viewed using the debugger
+Fine grain tracing control, using level, flags, and can handle 
+application conditions
+
+
+WMI Service switches
+Winmgmt
+1. /backup
+2. /restore
+3. /resyncperf
+4. /standalone
+5. /sharedhost
+6. /verifyrepository
+7. /salvagerepository
+8. /resetrepository
+
+
+Part 2:  WMI T-shooting
+
+
+General T-Shooting Methods
+•General T-Shooting Tools:
+1: dump / user dump
+2: TTTracer
+3: Event Log
+4: Perfmon
+5: Netmon
+•Next: Focus on WMI t-Shooting Tools
+
+
+WMI ERRORS Code
+• 0x800410xx and 0x800440xx are WMI errors. It means that a 
+specific WMI operation failed. For instance, it could be due 
+insufficient privileges to perform the WMI requested operation or 
+due to the nature of the request itself or due to a WMI 
+infrastructure issue, such as WMI DCOM registration issue.
+• 0x8007xxxx are Win32 errors, not WMI errors. WMI may return 
+these types of error due to an external failure, for example, DCOM 
+security.
+• 0x80040xxx are pure DCOM errors, not WMI errors. WMI may 
+return these types of error due to an external failure (for example 
+DCOM configuration).
+
+
+• 0x80005xxx are ADSI errors, not WMI errors. WMI may return 
+these types of errors due to an external failure, such as an Active 
+• 0x80005xxx are ADSI errors, not WMI errors. WMI may return 
+these types of errors due to an external failure, such as an Active 
+What do “Access Denied” errors 
+mean?
+• 0x80041003 (WBEM_E_ACCESS_DENIED) 
+This typically results when the process / Specific user trying to 
+access the namespace does not have the required WMI privileges. 
+• Check WMIMGMT.EXE and permissions for that namespace.
+• 0x80070005 (DCOM ACCESS_DENIED)
+This error occurs when the connected user is not recognized or is 
+restricted in some fashion by the remote server
+• The username/password does not exist. 
+• The user does not have the remote launch or remote activation 
+options set.  
+• The specific user does not have the DCOM permissions..
+• 0x800706xx (DCOM RPC error)
+This often occurs when a firewall is configured on the remote 
+computer. 
+
+
+Typical WMI Issues
+Configuration 
+Issues
+Dcom Security
+Firewall Config.
+WMI Namespace 
+Security
+
+
+Infrastructure 
+Issues
+WMI Service 
+Startup
+DCOM Registration
+Missing WMI Class
+Improper WMI 
+Provider 
+Registration
+Missing System 
+Files
+WMI Repository
+Deleted WMI 
+Repository
+Typical WMI issue Symptom and 
+Cause
+Symptom
+Slow boot/Slow logon
+Cause
+Large Repository size
+Excessive inventorying
+Fast/Excessive Repository 
+growth
+Inventorying from System 
+Center
+Third party providers
+RSOP logging
+Local WMI queries
+Missing providers
+Permissions in Registry
+Permissions on files
+DCOM
+Remote WMI queries
+DCOM
+RPC errors
+Firewall
+High CPU in WMIprvse / 
+SVCHost
+Stuck Queries
+Bad queries
+Excessive queries
+
+
+Find the WMI provider in 
+WMIPrvse.exe
+• tasklist /m |findstr /i "wmi“
+
+
+Find the PID
+For svchost.exe (Winmgmt):
+1: tasklist /svc
+2: when WMI doesn’t working, try sc queryex
+For WMIPrvse.exe
+1: check the dll for the class
+in MSDN:
+For example, win32_process  ->  cimvin32.dll
+2: tasklist /m cimwin32.dll
+This can be used when capturing the TTT log.
+
+
+Some of WMI Tools
+• Event Log Tracing for Win 2k8 or later
+• Informational Events Only.
+• Client PID, namespaces, queries, etc.
+• ETW Tracing
+• WMI Tracer
+• WMIDiag
+• So far it is supporting Win 2003.
+• On 2008, it will report 0x80041002 - (WBEM_E_NOT_FOUND) 
+errors
+• Winmgmt.exe
+• Good for overall health of WMI.
+
+
+• Backup/Restore repository.
+• Move WMI service to a separated / shared svchost.exe
+System WMI tools - 1
+WMImgmt.msc
+• The quickest way to 
+test the WMI service : 
+start the 
+Wmimgmt.msc,  and 
+check the properties 
+on "WMI Control 
+(Local)"
+Check namespace 
+security 
+Check remote WMI 
+connection
+Backup / restore WMI 
+repository
+
+
+System WMI tools -2
+WBEMTEST.exe
+• Low level tool for browsing 
+WMI Schema
+• List classes, instances, 
+execute methods, performs 
+WQL queries (WMI Query 
+Language)
+• First line of defense when 
+troubleshooting WMI 
+related problems-script or 
+otherwise
+
+
+System WMI tools -3
+DCOMCNFG.exe
+• WMI is built upon Dcom
+• Dcomcnfg.exe to check DCOM settings
+
+
+WMI-Activity log 
+• Event Log Tracing – Beginning in Vista and Windows Server 2008, 
+there is a built-in WMI tracing mechanism located in the Event 
+Viewer which will log detailed information about WMI activity.  The 
+events captured in this trace are “INFORMATIONAL ONLY” – 
+therefore, you will not see any errors logged in this trace view.  
+• However, this tracing facility will provide you with information 
+about CLIENT PID’s, Machine Name’s, Namespaces, the 
+Query text, and Start/Stop time.  Start/Stop time might be 
+good to know if the customer is complaining about the turnaround 
+time for a typical query or other WMI operation.
+
+
+WMI-Activity Log - Enable
+How to enable WMI activity event log
+1. Right click on My Computer, select “Manage”. Expand “Event 
+Viewer”
+2. Expand “Application and Services Logs” – note: this may take a few 
+moments.
+3. Expand “Microsoft” and the “Windows” folder.
+4. Click on the “Microsoft” folder and then click on the “View” menu 
+and click on “Show Analytic and Debug Logs”.  The folders may blink 
+for a minute.
+5. Scroll down until you see the WMI-Activity folder and expand it.
+6. Right click on the “Trace” icon and select Properties.
+7. Check the “Enable Logging” button.  You will be prompted to clear 
+the existing logs.
+8. Click OK.  Then to view the traces, click on the “Trace” icon.
+9. Notice, the logs that are generated. 
+
+
+• command:
+• command:
+WMI-Activity log properties
+
+
+Repository Auto Recover Feature: Win 
+2k8
+Reg key:
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\WBEM\CIMOM
+• Autorecover MOFs  
+• AutoRestoreEnabled
+• Repository Directory
+
+
+Separate the WMI Service
+The core of WMI is hosted in service host. 
+We can move it to a dedicated SVChost.exe
+Winmgmt /standalonehost and /sharedhost
+NOTE: Moving the core into it’s own host can be helpful to isolate 
+CPU and Memory spikes 
+
+
+WPP trace
+ETW Trace tool: WMITrace.exe
+Download:
+http://toolbox/wmitracer 
+Usage: 
+1. Repro the issue and collect the ETW log.
+2. Parse the ETW log by TMF (trace message format ) 
+convertor
+
+
+WMIDiag
+1. Download WMI Diagnosis Utility -- Version 2.0 self-extracting zip 
+file.
+http://www.microsoft.com/download/en/details.aspx?displaylang=en&id=768
+4
+2. Open a command prompt window and navigate to the extracted 
+files, run:
+cscript WMIDiag.vbs  
+3. This may take quite a few minutes to complete. Once completed 
+you will have the following file:
+%TEMP%\WMIDIAG*****.CSV \ .TXT \.LOG
+
+
+4. Most of the info can be ignored, but we should open the log file 
+and search for the WMI REPORT: BEGIN section of the file. The 
+report section provides a summary of the tests run by the tool.
+Associating Classes, Providers, 
+and MOF Files in WMIDiag
+One very useful function included in WMIDiag is 
+the ability to associate each WMI class with its 
+provider and with the MOF file for that provider. 
+wmidiag.vbs CorrelateClassAndProvider 
+Upon completion the utility will create a 
+spreadsheet (WMIDIAG-****.CSV) that will contain 
+an enormous amount of data about each class, 
+each provider, and each MOF file.
+Demo:
+\\gcrcssfs\Public\Commercial\Platform\ServerOS\lewliu\
+WMI
+
+
+WMI remote connection
+• Use the wbemtest / wmimgmt.msc for remote connection test.
+• The Diagram – WMI / Windows firewall and DCOM 
+Connecting Through Windows Firewall
+http://msdn.microsoft.com/en-us/library/aa389286(v=v
+s.85)
+
+
+WMI remote connection setting
+• Connection 1
+1. Ensure that the user account that is on Computer A is a local 
+administrator on Computer B.
+2. Allow for remote administration on Computer B. 
+netsh firewall set service RemoteAdmin enable
+• Connection 2
+1. If the Windows Firewall is enabled on Computer A, enable the 
+"Allow Remote Administration" exception and open the DCOM 
+port TCP 135 on Computer A
+netsh firewall add portopening protocol=tcp port=135 
+name=DCOM_TCP135
+2. Add the client application or script, which contains the sink for 
+callback to the Windows Firewall Exceptions List on Computer A. 
+If the client is a script or a MMC snap-in, the sink is often 
+Unsecapp.exe.
+
+
+netsh firewall add allowedprogram program=%windir%\system32\
+netsh firewall add allowedprogram program=%windir%\system32\
+Part 3: WMI - Advanced
+
+
+Private Wbemcore.dll usage
+Method 1:
+replace the c:\windows\system32\wbem\wbemcore.dll in CD 
+mode
+Method 2:
+1. Stop and disable the wmi service
+2. Rename the wbemcore.dll in  dllcache folder and c:\windows\system32\
+wbem folder. 
+3. Copy the private dll to c:\windows\system32\wbem
+4. Open a cmd window and run 
+rundll32 %WINDIR%\system32\wbem\WMISvc.dll, MoveToAlone 4
+5. Enable and start the wmi service
+6. Change the wmi log to verbose mode
+7. Run wbemtest to see if the private works.
+8. If it works, enable the perfmon again, and monitor the box.
+
+
+Example for Private Wbemcore.dll
+
+
+WMISPY
+Used to record the WMI caller info (PID, TID), time, User account 
+info.
+Download:
+file://tkfiltoolbox/tools/WMISpy/1.0.0.6/WMISpy_1.0.0.6.zip
+1. Copy WMISpy.exe to debugger folder
+2. It needs download the symbols from Symbol server.
+3. It also needs to separate WMI to a dedicated svchost.exe
+4. Run ‘wmispy.exe c:\wmilog.txt’
+5. Repro the issue
+6. Press “Ctrl + C” and “Enter” to stop logging.
+7. Check the log for caller info.
+
+
+WMISPY example
+
+
+WMI Quota
+WbemTest ->Connect to Root ->Enum Instances: 
+__ProviderHostQuotaConfiguration
+• ThreadsPerHost: Defines the 
+number of threads owned by any 
+one host 
+• HandlesPerHost: Defines the 
+number of kernel object handles 
+each host may have 
+• ProcessLimitAllHosts: Defines the 
+total number of host processes that 
+can be executing concurrently 
+• MemoryPerHost: Defines the 
+amount of private memory that can 
+be held by each host 
+• MemoryAllHosts: Defines the 
+combined amount of private 
+memory (in bytes) that can be held 
+by all hosts 
+Memory and Handle Quotas in the WMI Provider Service
+http
+://blogs.technet.com/b/askperf/archive/2008/09/16/memory-and-h
+andle-quotas-in-the-wmi-provider-service.aspx
+
+
+WMI Quota - Job
+• The WMIPrvse.exe belongs to the same Job. All Wmiprvse.exe 
+share the job Quota, which is defend in: 
+__ ProviderHostQuotaConfiguration
+We can check the Job info in procexp -> Wmiprvse.exe’s properties 
+> Job
+
+
+TLS leak
+• Thread Local Storage (TLS) is the method by which each thread in 
+a given multithreaded process can allocate locations in which to 
+store thread-specific data. 
+• Dynamically bound (run-time) thread-specific data is supported by 
+way of the TLS API (TlsAlloc, TlsGetValue, TlsSetValue, and 
+TlsFree). 
+• TLS is finite resource (64 + 1024 Slots in total).
+
+
+TLS leak debugging -1
+WMIprvse.exe dump:
+• !teb
+Tls Storage:          
+LastStatusValue:      
+0000000000000000  < -------- the Tls is NULL 
+c0000017  < ----- {Not Enough Quota}  Not enough 
+virtual memory or paging file quota is available to complete the specified 
+operation.
+• dt ntdll!_PEB 000007fffffdf000 TlsExpansionBitmap TlsBitmap
++0x078 TlsBitmap          
+: 0x00000000`77fa6920   < ---- 1024 Slots 
++0x238 TlsExpansionBitmap : 0x00000000`77fa6910  < ---- and 64 
+expanded slot
+• dt ntdll!_RTL_BITMAP 0x00000000`77fa6920 
++0x000 SizeOfBitMap     : 0x40
++0x008 Buffer           
+: 0x000007ff`fffdf080  -> 0xffffffff
+
+
+• dt ntdll!_RTL_BITMAP 0x00000000`77fa6910 
++0x000 SizeOfBitMap     : 0x400
++0x008 Buffer           
+: 0x000007ff`fffdf240  -> 0xffffffff
+TLS leak debugging -2
+• dyb 0x000007ff`fffdf240 0x000007ff`fffdf240+(400/8)
+000007ff`fffdf240  11111111 11111111 11111111 11111111  ff ff ff ff  
+000007ff`fffdf244  11111111 11111111 11111111 11111111  ff ff ff ff
+000007ff`fffdf248  11111111 11111111 11111111 11111111  ff ff ff ff
+……
+000007ff`fffdf2b8  11111111 11111111 11111111 11111111  ff ff ff ff
+000007ff`fffdf2bc  11111111 11111111 11111111 11111111  ff ff ff ff
+• dyb  0x000007ff`fffdf080  0x000007ff`fffdf080+(40/8)
+000007ff`fffdf080  11111111 11111111 11111111 11111111  ff ff ff ff  
+000007ff`fffdf084  11111111 11111111 11111111 11111111  ff ff ff ff
+
+
+New Debugging options for WMI in 
+Windows
+• There is a new global variable in Win for the Winmgmt.exe 
+process which you can edit in the debugger to equal any 
+error you are tracking in WMI.  
+• At the point in time that WMI hits that error, the debugger 
+will break on that function giving you the complete stack of 
+functions which lead up to that error.
+• The new global variable is called 
+g_Error_to_Break_on
+
+
+New Feature: g_Error_to_Break_on
+1. Separate the WMI to a dedicate Svchost.exe by:
+Winmgmt.exe  /standalonehost
+Net stop winmgmt & Net start Winmgmt
+2. With proper symbols, break into the debugger (ctrl+break) and 
+run command: 
+ed wbemcomn!g_Error_to_Break_on ERROR_CODE 
+NOTE: we need private symbol for wbemcomn.dll. Wbemcomn.dll is located 
+in the c:\windows\system32 dir.
+3. Type g (or F5) to release the debugger and allow WMI to 
+continue processing until the issue occurs.
+4. When the error occurs, the debugger will break into the WMI 
+process and show the function call & ready for live-debug.
+
+
+Example for g_Error_to_Break_on
+DEMO :
+• Error on querying class in Wbemtest:
+Select * from Win32_processor
+• Error message: 0x80041003
+T-Shooting:
+
+
+1. separate the Winmgmt to a new svchost.exe.
+2. Config the private symbol for wbemcomn.dll
+3. Attach to svchost.exe(get Pid by Sc queryex), and set break on error 
+0x80041013.
+4. Do query to repro the issue and get break in Windbg, save the dump 
+by .dump /ma
+Demo – dump analysis for 
+0x80041013
+• Dump share:  
+\\gcrcssfs\Public\Commercial\Platform\ServerOS\lewliu\WMI
+1. KERNELBASE!DebugBreak+0x2
+2. wbemcomn!CMemoryLog::Write+0x81
+3. WmiPrvSD!CServerObject_BindingFactory::InternalGetProvider+0x3c6
+4. WmiPrvSD!
+CServerObject_BindingFactory::InternalGetProviderViaProxyRoute+0x295
+5. WmiPrvSD!CServerObject_BindingFactory::InternalFindProvider+0x735
+6. WmiPrvSD!CServerObject_BindingFactory::GetProvider+0x73a
+7. wbemcore!CWbemNamespace::DynAux_ExecQueryExtendedAsync+0x24e
+8. wbemcore!CQueryEngine::ExecComplexQuery+0x4c0
+9. wbemcore!CQueryEngine::ExecQlQuery+0xcf
+10. wbemcore!CQueryEngine::ExecQuery+0x45c
+11. wbemcore!CAsyncReq_ExecQueryAsync::Execute+0x68
+12. …
+
+
+Demo - Continued
+• 0:011> .frame /r 2; dv
+…
+WmiPrvSD!CServerObject_BindingFactory::InternalGetProvider+0x3c6:
+000007fe`fa3dc68b 90              
+nop
+this = 0x00000000`00000000
+…
+here.
+a_User = 0x00000000`01503b40 "LEWIS-2K8-R2\Administrator"
+a_Locale = 0x00000000`020fc880 "ms_409"
+a_Scope = 0x00000000`00000000 ""
+a_Name = 0x00000000`0196eef0 "CIMWin32“  < ----- get the class name 
+And actually, the problem is caused by a missing cimwin32.dll
+
+
+Key point for g_Error_to_Break_on
+1: separate the WMI to a dedicated svchost.exe
+2: private symbol for Wbemcomn.dll which is used for setting break 
+point
+\\gcrcssfs\Public\Commercial\Platform\ServerOS\lewliu\WMI\internal pdb
+for wbemcomn.dll
+3: reoccurrence of the issue.
+4: save dump in windbg
+5: when exiting the windbg, the svchost.exe will exit too.
+6: seems only working for WMI error (0x8004****). 
+Demo: not working for DCOM error 0x80070005
+
+
