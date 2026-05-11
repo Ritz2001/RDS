@@ -1,0 +1,28 @@
+The Credential Security Service Provider (CredSSP)
+
+Is used for enabling SSO and NLA to prove that a user has the right to log on before the server creates a session. 
+
+ 
+
+Network Level Authentication (NLA) is a new authentication method that completes user authentication before you establish a Remote Desktop connection and the logon screen appears. This is a more secure authentication method that can help protect the remote computer from malicious users and malicious software. The advantages of Network Level Authentication are:
+
+It requires fewer remote computer resources initially. The remote computer uses a limited number of resources before authenticating the user, rather than starting a full Remote Desktop connection as in previous versions. 
+
+By authenticating the user on the client machine before making the connection to the Terminal Server, NLA helps provide better security by reducing the risk of denial-of-service attacks. 
+
+To use Network Level Authentication, all of the following requirements must be met: 
+
+Remote Desktop Connection 6.0 or higher. 
+
+The client computer operating system must support the new Credential Security Support Provider (CredSSP) protocol. Windows Vista and Windows Server 2008 support CredSSP by default, and Windows XP and Windows Server 2003 will add CredSSP support with a service pack. 
+
+Windows Server 2008 Terminal Services. 
+
+To use Network Level Authentication, you must meet the following requirements: 
+
+The client computer must be using at least Remote Desktop Connection 6.0. 
+
+The client computer must be using an operating system, such as Windows 7, Windows Vista, or Windows XP with Service Pack 3, that supports the Credential Security Support Provider (CredSSP) protocol. (Select here for enabling it on Win XP SP3). 
+
+The RD Session Host server must be running Windows Server 2008 R2 or Windows Server 2008 
+
