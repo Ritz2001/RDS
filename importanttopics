@@ -1,0 +1,132 @@
+Method 1: Using Group Policy
+Open Group Policy Management: Press Win + R, type gpmc.msc, and click OK.
+ 
+Navigate to Remote Desktop Services: Go to Computer Configuration -> Policies -> Windows Settings -> Security Settings -> Local Policies -> User Rights Assignment.
+ 
+Edit RDP Settings: Under Administrative Templates, navigate to Windows Components -> Remote Desktop Services -> Remote Desktop Session Host -> Device and Resource Redirection.
+ 
+Disable Clipboard Redirection: Find the setting labeled “Do not allow clipboard redirection” and set it to Enabled.
+ 
+Apply and Exit: Click OK to apply your settings, then close the Group Policy Management Editor.
+ 
+Method 2: Using the Registry Editor
+Open Registry Editor: Press Win + R, type regedit, and click OK.
+ 
+Navigate to RDP Settings: Go to HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server.
+ 
+Edit the Clipboard Settings: Find the DWORD value named “fDisableClip”. If it doesn’t exist, right-click and create a new DWORD (32-bit) value and name it fDisableClip.
+ 
+Set the Value: Set this value to 1 to disable clipboard redirection. To enable it later, change the value back to 0.
+ 
+
+
+
+
+•	You open the RD client (desktop or web) on your local device
+•	All remote sessions begin with a connection to Azure Front Door , which provides the global entry point to AVD. Azure Front Door determines the AVD gateway (RDGateway) service with the lowest latency for your device and directs the connection to it.
+•	The RDGateway service connects to the AVD broker (RDBroker) service in the same Azure region. The RDGateway service enables session hosts to be in any region and still be accessible to users.
+•	The RDBroker service takes over and orchestrates the connection between your device and the session host. The RDBroker service instructs the AVD agent running on the session host to connect to the same RDGateway service that your device has connected through.
+•	The session host connects to the RDGateway (aka Reverse connect).
+•	After both client and session host connected to the RDGateway service, the RDGateway starts relaying the RDP traffic using Transmission Control Protocol (TCP) between the client and session host. Reverse connect transport is the default connection type.
+•	If UDP can be negotiated, a direct User Datagram Protocol (UDP)-based transport is created between your device and the session host, and all traffic is offloaded from TCP to UDP, bypassing the RDGateway service.
+
+
+Application Masking manages access to Applications, Fonts, and other items based on
+criteria. The Application Rules Editor is used to Describe the item, such as application, to be
+managed. The Editor is also used to define criteria rules are managed by. For instance,
+GitHub should be hidden from the Accounting group.
+Things you can do with the Apps Rules Editor:
+• Create new Rule Sets
+• Edit existing Rule Sets
+• Manage the user and group assignments for Rule Sets
+• Temporarily test rule-sets
+Before using the Application Rules Editor, it must be installed
+
+MSIX app attach process flow. 
+1.	User authenticates against Azure AD and obtains AVD feed.
+2.	RD Broker working with RD Gateway, and RD agent orchestrate a connection to a VM.
+3.	VM initiates creation of user session and FSLogix “brings” the user profile.
+4.	RD Agent is notified what MSIX packages must be registered for the user.
+5.	RD Agent registers MSIX packages.
+6.	Session establishment is completed, and user can interact with any of the MSIX packages.
+ 
+ 
+.CIM is a new file extension associated with Composite Image Files System (CimFS). Mounting and unmounting CIM files is faster than VHD files. CIM also consumes less CPU and memory than VHD.
+ What is staging?
+MSIX app attach defines staging as an operation that:
+•	mounts an MSIX image from the MSIX file share
+•	parses the content of the MSIX image so relevant OS components can be notified that an MSIX packaged application is available
+•	dependencies are evaluated
+MSIX app attach defines destaging as an operation that:
+•	removes references in the OS to the MSIX packaged application
+•	unmounts an MSIX image from the MSIX file share
+Only MSIX packages with State set to active are staged.
+ 
+•	Staging happens per session host.
+•	Staging an MSIX package does not grant users permissions to the MSIX application.
+•	When staging fails, for any reason, the session host Status will become Unavailable. The status will remain until the issue blocking staging is resolved or the MSIX package is removed from the host pool.
+•	Staged CIM packages do not appear in the Disk Management tool, only VHD(x) do. Both VHD(x) and CIM files show up when running mountvol.
+ 
+ 
+Create an MSIX image for MSIX app attach
+MSLearn Link: Manage MSIX app attach - Training | Microsoft Learn(opens in a new tab)
+Requirements 
+•	Existing AVD deployment
+•	Download the msixmgr tool(opens in a new tab) and save the msixmrg.zip file to a folder within your personal laptop.
+•	Unzip the msixmgr.zipfile and place the MSIX package in the same folder.
+•	Install the MSIXCert.pfx in the Local Machine, under the Trusted Root Certificate store.
+•	Enable Developer Mode under: Settings>Privacy & Security> For Developers
+•	Install NotePadPPMSIX_1.1.0.0_x64__74gmt6m99dpft.msix
+ 
+Create an MSIX image for MSIX app attach. Test MSIX app attach by using PowerShell scripts. Publish an MSIX application as a remote app. Maintain MSIX app attach with updates and removals.
+ 
+
+WinRM ListnerA management service that implements WS-Management protocol to send and receive messages. WinRM is a listener service. A listener is defined by a transport (HTTP or HTTPS) and an IPv4 or IPv6 address. You can create more than one WinRM listener instance on a single computer by giving them a different TCP/IP address or port number. 
+ 
+ 
+WINRM 
+ 
+Default Authentication Settings 
+The default credentials, user name, and password, are the credentials for the logged-on user account that runs the script. 
+ 
+The following list contains a list of what occurs when a script or application runs under the default credentials: 
+•	Kerberos is the default method of authentication when the client is in a domain and the remote destination string is not one of the following: localhost, 127.0.0.1, or [::1]. 
+•	Negotiate is the default method when the client is not in a domain, but the remote destination string is one of the following: localhost, 127.0.0.1, or [::1]. 
+Basic Authentication
+ 
+To explicitly establish Basic authentication in the call to WSMan.CreateSession, set the WSManFlagUseBasic and WSManFlagCredUserNamePassword flags in the flags parameter. Basic authentication is disabled in the default configuration settings for both the WinRM client and the WinRM server.
+ 
+Digest Authentication
+ 
+To explicitly establish Digest authentication in the call to WSMan.CreateSession, set the WSManFlagUseDigest flag in the flags parameter. Digest is not supported. It cannot be configured, for the WinRM server component.
+ 
+Negotiate Authentication
+ 
+To explicitly establish Negotiate authentication, also known as Windows Integrated Authentication, in the call to WSMan.CreateSession, set the WSManFlagUseNegotiate flag in the flags parameter.
+ 
+User Account Control (UAC) affects access to the WinRM service. When Negotiate authentication is used in a workgroup, only the built-in Administrator account can access the service. To allow all accounts in the Administrators group to access the service, set the following registry value:
+ 
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\LocalAccountTokenFilterPolicy = 1
+ 
+Kerberos Authentication 
+To explicitly establish Kerberos authentication in the call to WSMan.CreateSession, set the WSManFlagUseKerberos flag in the flags parameter. Both the client and the server computers must be joined to a domain. If you use Kerberos as the authentication method, you cannot use an IP address in the call to WSMan.CreateSession or IWSMan::CreateSession. 
+ 
+Client Certificate-based Authentication 
+To establish client certificate-based authentication in the call to WSMan.CreateSession, set the WSManFlagUseClientCertificate flag in the flags parameter. 
+You must first enable certificate authentication on both the client and service by using the Winrm command line tool.
+ 
+Collector Initiated 
+•	With a Collector Initiated subscription the collector will have to establish outbound WinRM connection and Pull events from the clients. 
+•	It has the following requirements:  
+o	The WinRM service has to be enabled on the client.
+This service is enabled by the default on the server operating systems but it is disabled by default on client operating systems
+o	The client has to be reachable over the network and a firewall rule needs to be configured to accept the incoming traffic 
+o	The collector will have to contact each clients to pull the events, for this reason this solution is not really scalable and it is not the preferred option 
+ 
+Source Initiated 
+•	With a Source Initiated subscription the collector will wait for incoming connection coming from the clients. 
+•	It has the following requirements:  
+o	The collector has to be reachable by the clients 
+o	A policy has to be deployed to the clients to point them to the collector 
+ 
+ 
